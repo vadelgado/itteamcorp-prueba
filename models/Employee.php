@@ -1,0 +1,104 @@
+<?php
+// models/Employee.php
+
+class Employee
+{
+    private $conn;
+    private $table = 'employees';
+
+    public $id;
+    public $nombre;
+    public $email;
+    public $puesto;
+    public $salario;
+    public $fecha_contratacion;
+    public $departamento_id;
+    public $rol_id;
+
+    public function __construct($db)
+    {
+        $this->conn = $db;
+    }
+
+    public function read()
+    {
+        $query = 'SELECT * FROM ' . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
+
+    // Crear un nuevo empleado
+    public function create()
+    {
+        $query = "INSERT INTO " . $this->table . " 
+            SET nombre=:nombre, email=:email, puesto=:puesto, 
+                salario=:salario, fecha_contratacion=:fecha_contratacion,
+                departamento_id=:departamento_id, rol_id=:rol_id";
+
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitizar datos
+        $this->nombre = htmlspecialchars(strip_tags($this->nombre));
+        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->puesto = htmlspecialchars(strip_tags($this->puesto));
+        $this->salario = htmlspecialchars(strip_tags($this->salario));
+        $this->fecha_contratacion = htmlspecialchars(strip_tags($this->fecha_contratacion));
+        $this->departamento_id = htmlspecialchars(strip_tags($this->departamento_id));
+        $this->rol_id = htmlspecialchars(strip_tags($this->rol_id));
+
+        // Vincular parámetros
+        $stmt->bindParam(':nombre', $this->nombre);
+        $stmt->bindParam(':email', $this->email);
+        $stmt->bindParam(':puesto', $this->puesto);
+        $stmt->bindParam(':salario', $this->salario);
+        $stmt->bindParam(':fecha_contratacion', $this->fecha_contratacion);
+        $stmt->bindParam(':departamento_id', $this->departamento_id);
+        $stmt->bindParam(':rol_id', $this->rol_id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Leer empleados con filtros
+    public function readFilter($nombre = '', $departamento_id = '', $offset = 0, $limit = 10)
+    {
+        $query = "SELECT e.*, d.nombre as departamento_nombre, r.nombre as rol_nombre 
+                  FROM " . $this->table . " e
+                  LEFT JOIN departments d ON e.departamento_id = d.id
+                  LEFT JOIN roles r ON e.rol_id = r.id
+                  WHERE e.nombre LIKE :nombre AND (:departamento_id IS NULL OR e.departamento_id = :departamento_id)
+                  LIMIT :offset, :limit";
+
+        $stmt = $this->conn->prepare($query);
+
+        $nombre = "%$nombre%";
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':departamento_id', $departamento_id);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+
+        $stmt->execute();
+
+        return $stmt;
+    }
+
+    // Leer un empleado por id
+    public function readOne($id)
+    {
+        $query = "SELECT e.*, d.nombre as departamento_nombre, r.nombre as rol_nombre 
+                  FROM " . $this->table . " e
+                  LEFT JOIN departments d ON e.departamento_id = d.id
+                  LEFT JOIN roles r ON e.rol_id = r.id
+                  WHERE e.id = ? LIMIT 0,1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $id);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+}
