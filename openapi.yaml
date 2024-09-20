@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: p1
+  description: API para la gestión de empleados
+  version: 1.0.0
+servers:
+  - url: http://localhost/itteamcorp-prueba/index.php
+tags:
+  - name: employees
+    description: Operaciones relacionadas con empleados
+
+paths:
+  /:
+    post:
+      tags:
+        - employees
+      summary: Crear un nuevo empleado
+      requestBody:
+        description: Datos del empleado a crear
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  description: Nombre del empleado
+                email:
+                  type: string
+                  description: Email del empleado
+                puesto:
+                  type: string
+                  description: Puesto del empleado
+                salario:
+                  type: number
+                  description: Salario del empleado
+                fecha_contratacion:
+                  type: string
+                  format: date
+                  description: Fecha de contratación
+                departamento_id:
+                  type: integer
+                  description: ID del departamento
+                rol_id:
+                  type: integer
+                  description: ID del rol
+      responses:
+        '201':
+          description: Empleado creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee created successfully.
+        '400':
+          description: Datos incompletos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Incomplete data.
+
+  /employees:
+    get:
+      tags:
+        - employees
+      summary: Obtener lista de empleados con filtros y paginación
+      parameters:
+        - name: nombre
+          in: query
+          description: Filtrar por nombre del empleado
+          required: false
+          schema:
+            type: string
+        - name: departamento_nombre
+          in: query
+          description: Filtrar por nombre del departamento
+          required: false
+          schema:
+            type: string
+        - name: rol_nombre
+          in: query
+          description: Filtrar por nombre del rol
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Número de página para la paginación
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de empleados obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+                    email:
+                      type: string
+                    puesto:
+                      type: string
+                    salario:
+                      type: number
+                    fecha_contratacion:
+                      type: string
+                      format: date
+                    departamento_id:
+                      type: integer
+                    rol_id:
+                      type: integer
+        '404':
+          description: No se encontraron empleados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No employees found.
+
+  /employees/{id}:
+    get:
+      tags:
+        - employees
+      summary: Obtener información de un empleado por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del empleado
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Información del empleado obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  nombre:
+                    type: string
+                  email:
+                    type: string
+                  puesto:
+                    type: string
+                  salario:
+                    type: number
+                  fecha_contratacion:
+                    type: string
+                    format: date
+                  departamento_id:
+                    type: integer
+                  rol_id:
+                    type: integer
+        '404':
+          description: Empleado no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee not found.
