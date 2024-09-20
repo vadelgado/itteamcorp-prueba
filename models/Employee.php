@@ -17,7 +17,7 @@ class Employee
 
     public function __construct($db)
     {
-        $this->conn = $db;
+        $this->conn = $db;        
     }
 
     public function read()
@@ -56,49 +56,70 @@ class Employee
         $stmt->bindParam(':departamento_id', $this->departamento_id);
         $stmt->bindParam(':rol_id', $this->rol_id);
 
-        if ($stmt->execute()) {
-            return true;
-        }
-
-        return false;
+        return $stmt->execute(); // Retorna true o false
     }
 
     // Leer empleados con filtros
-    public function readFilter($nombre = '', $departamento_id = '', $offset = 0, $limit = 10)
+    public function readFilter($nombre = '', $departamento_nombre = null, $rol_nombre = null, $offset = 0, $limit = 10)
     {
-        $query = "SELECT e.*, d.nombre as departamento_nombre, r.nombre as rol_nombre 
+        $query = "SELECT e.*, 
+                         d.nombre AS departamento_nombre, 
+                         r.nombre AS rol_nombre,
+                         (CASE 
+                             WHEN e.salario > (SELECT AVG(salario) FROM " . $this->table . " WHERE departamento_id = e.departamento_id) 
+                             THEN 'por encima' 
+                             ELSE 'por debajo' 
+                         END) AS salario_comparacion
                   FROM " . $this->table . " e
                   LEFT JOIN departments d ON e.departamento_id = d.id
                   LEFT JOIN roles r ON e.rol_id = r.id
-                  WHERE e.nombre LIKE :nombre AND (:departamento_id IS NULL OR e.departamento_id = :departamento_id)
+                  WHERE (:nombre IS NULL OR e.nombre LIKE :nombre) 
+                  AND (:departamento_nombre IS NULL OR d.nombre LIKE :departamento_nombre)
+                  AND (:rol_nombre IS NULL OR r.nombre LIKE :rol_nombre)
                   LIMIT :offset, :limit";
-
+    
         $stmt = $this->conn->prepare($query);
-
-        $nombre = "%$nombre%";
-        $stmt->bindParam(':nombre', $nombre);
-        $stmt->bindParam(':departamento_id', $departamento_id);
+    
+        // Preparar parámetros
+        $nombre = !empty($nombre) ? "%$nombre%" : null;
+        $departamento_nombre = !empty($departamento_nombre) ? "%$departamento_nombre%" : null;
+        $rol_nombre = !empty($rol_nombre) ? "%$rol_nombre%" : null;
+    
+        // Vincular parámetros
+        $stmt->bindParam(':nombre', $nombre, PDO::PARAM_STR);
+        $stmt->bindParam(':departamento_nombre', $departamento_nombre, PDO::PARAM_STR);
+        $stmt->bindParam(':rol_nombre', $rol_nombre, PDO::PARAM_STR);
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-
+    
+        // Ejecutar consulta
         $stmt->execute();
-
+    
         return $stmt;
     }
 
     // Leer un empleado por id
     public function readOne($id)
     {
-        $query = "SELECT e.*, d.nombre as departamento_nombre, r.nombre as rol_nombre 
+        $query = "SELECT e.*, 
+                         d.nombre as departamento_nombre, 
+                         r.nombre as rol_nombre,
+                         CASE 
+                             WHEN e.salario > (SELECT AVG(salario) 
+                                               FROM " . $this->table . " 
+                                               WHERE departamento_id = e.departamento_id) 
+                             THEN 'Por encima del promedio' 
+                             ELSE 'Por debajo del promedio' 
+                         END as salario_comparacion
                   FROM " . $this->table . " e
                   LEFT JOIN departments d ON e.departamento_id = d.id
                   LEFT JOIN roles r ON e.rol_id = r.id
                   WHERE e.id = ? LIMIT 0,1";
-
+    
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
-
+    
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

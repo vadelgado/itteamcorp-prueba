@@ -17,7 +17,7 @@ class EmployeeController
         $this->employee = new Employee($this->db);
     }
 
-    // Obtener todos los empleados
+
     public function getAllEmployees()
     {
         $result = $this->employee->read();
@@ -73,37 +73,27 @@ class EmployeeController
     public function getEmployees()
     {
         $nombre = isset($_GET['nombre']) ? $_GET['nombre'] : '';
-        $departamento_id = isset($_GET['departamento_id']) ? $_GET['departamento_id'] : null;
-        $page = isset($_GET['page']) ? $_GET['page'] : 1;
+        $departamento_nombre = isset($_GET['departamento_nombre']) ? $_GET['departamento_nombre'] : null;
+        $rol_nombre = isset($_GET['rol_nombre']) ? $_GET['rol_nombre'] : null;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = 10;
         $offset = ($page - 1) * $limit;
-
-        $result = $this->employee->readFilter($nombre, $departamento_id, $offset, $limit);
+    
+        $result = $this->employee->readFilter($nombre, $departamento_nombre, $rol_nombre, $offset, $limit);
         $num = $result->rowCount();
-
+    
         if ($num > 0) {
             $employees_arr = array();
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                extract($row);
-                $employee_item = array(
-                    'id' => $id,
-                    'nombre' => $nombre,
-                    'email' => $email,
-                    'puesto' => $puesto,
-                    'salario' => $salario,
-                    'fecha_contratacion' => $fecha_contratacion,
-                    'departamento_id' => $departamento_id,
-                    'departamento_nombre' => $departamento_nombre,
-                    'rol_id' => $rol_id,
-                    'rol_nombre' => $rol_nombre
-                );
-                array_push($employees_arr, $employee_item);
+                array_push($employees_arr, $row);
             }
             echo json_encode($employees_arr);
         } else {
             echo json_encode(array('message' => 'No employees found.'));
         }
     }
+    
+    
 
     // Obtener un empleado por ID
     public function getEmployeeById($id)
